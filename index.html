@@ -1,1361 +1,525 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f0f0f" />
-    <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Finance Tracker" />
-    <link rel="manifest" href="./manifest.json" />
-    <title>Personal Finance Tracker</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-    <!-- <script src="./env.js"></script> -->
-    <!-- <script>
-        // 1. Paste your ACTUAL Project URL here (Found in Settings > API)
-        const supabaseUrl = 'https://atnvrzgqfniqmhlgnxqh.supabase.co';
-
-        // 2. Paste your ACTUAL 'anon public' key here
-        const supabaseKey = 'sb_publishable_qp_T-NhSAXIYB8Qyiiu0hw_Tz0eB_J2';
-
-        // 3. Initialize the client
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
-    </script> -->
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        :root {
-            --bg-primary: #0f0f0f;
-            --bg-secondary: #1a1a1a;
-            --bg-card: #222222;
-            --accent: #6366f1;
-            --accent-hover: #818cf8;
-            --income: #22c55e;
-            --expense: #ef4444;
-            --text-primary: #ffffff;
-            --text-secondary: #a0a0a0;
-            --border: #333333;
-            --chart-grid: #333333;
-            --chart-label: #a0a0a0;
-        }
-
-        body[data-theme='light'] {
-            --bg-primary: #f6f7fb;
-            --bg-secondary: #ffffff;
-            --bg-card: #ffffff;
-            --accent: #4f46e5;
-            --accent-hover: #4338ca;
-            --income: #15803d;
-            --expense: #dc2626;
-            --text-primary: #0f172a;
-            --text-secondary: #475569;
-            --border: #dbe2ea;
-            --chart-grid: #e2e8f0;
-            --chart-label: #475569;
-        }
-
-        body {
-            font-family: 'Segoe UI', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            min-height: 100vh;
-        }
-
-        body,
-        header,
-        .budget-card,
-        .card,
-        .form-card,
-        .chart-card,
-        .transactions-card,
-        .transaction-item,
-        .action-btn,
-        .type-btn,
-        .submit-btn,
-        .delete-btn,
-        .form-group input,
-        .form-group select,
-        .filter-select,
-        .search-input,
-        .budget-input-wrap input,
-        .t-meta,
-        .empty-state,
-        .budget-status {
-            transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
-        }
-
-        /* HEADER */
-        header {
-            background: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
-            padding: 16px 32px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        header h1 {
-            font-size: 22px;
-            font-weight: 700;
-            color: var(--accent);
-        }
-
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        header span {
-            color: var(--text-secondary);
-            font-size: 14px;
-        }
-
-        .action-btn {
-            padding: 8px 12px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 13px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .action-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        /* LAYOUT */
-        .container {
-            max-width: 1100px;
-            margin: 0 auto;
-            padding: 32px 20px;
-        }
-
-        .budget-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 18px 20px;
-            margin-bottom: 20px;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 16px;
-            flex-wrap: wrap;
-        }
-
-        .budget-input-wrap {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .budget-input-wrap label {
-            font-size: 14px;
-            color: var(--text-secondary);
-        }
-
-        .budget-input-wrap input {
-            width: 180px;
-            padding: 10px 12px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 14px;
-            outline: none;
-        }
-
-        .budget-input-wrap input:focus {
-            border-color: var(--accent);
-        }
-
-        .budget-status {
-            font-size: 14px;
-            color: var(--text-secondary);
-            font-weight: 500;
-        }
-
-        .budget-status.warning {
-            color: #facc15;
-        }
-
-        .budget-status.exceeded {
-            color: var(--expense);
-        }
-
-        /* SUMMARY CARDS */
-        .summary-cards {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-        }
-
-        .card .label {
-            font-size: 13px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 10px;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .label-icon {
-            font-size: 14px;
-        }
-
-        .card .amount {
-            font-size: 28px;
-            font-weight: 700;
-        }
-
-        .card.balance .amount {
-            color: var(--accent);
-        }
-
-        .card.income .amount {
-            color: var(--income);
-        }
-
-        .card.expense .amount {
-            color: var(--expense);
-        }
-
-        /* MAIN GRID */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 1fr 1.4fr;
-            gap: 24px;
-            margin-bottom: 32px;
-        }
-
-        /* FORM */
-        .form-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-        }
-
-        .form-card h2 {
-            font-size: 16px;
-            margin-bottom: 20px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .form-group {
-            margin-bottom: 14px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-
-        .form-group input,
-        .form-group select {
-            width: 100%;
-            padding: 10px 14px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        .form-group input:focus,
-        .form-group select:focus {
-            border-color: var(--accent);
-        }
-
-        .type-toggle {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            margin-bottom: 14px;
-        }
-
-        .type-btn {
-            padding: 10px;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            background: var(--bg-secondary);
-            color: var(--text-secondary);
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-
-        .type-btn.active-income {
-            background: #14532d;
-            border-color: var(--income);
-            color: var(--income);
-        }
-
-        .type-btn.active-expense {
-            background: #450a0a;
-            border-color: var(--expense);
-            color: var(--expense);
-        }
-
-        .type-btn:hover {
-            border-color: var(--accent);
-            color: var(--accent);
-        }
-
-        .submit-btn {
-            width: 100%;
-            padding: 12px;
-            background: var(--accent);
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-            margin-top: 6px;
-        }
-
-        .submit-btn:hover {
-            background: var(--accent-hover);
-        }
-
-        /* CHART */
-        .chart-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-        }
-
-        .chart-card h2 {
-            font-size: 16px;
-            margin-bottom: 20px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .chart-card .secondary-chart-title {
-            margin-top: 28px;
-        }
-
-        .chart-card canvas {
-            display: block;
-            width: 100% !important;
-        }
-
-        .search-input {
-            width: 100%;
-            padding: 10px 12px;
-            margin-bottom: 14px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 14px;
-            outline: none;
-        }
-
-        .search-input:focus {
-            border-color: var(--accent);
-        }
-
-        /* TRANSACTIONS */
-        .transactions-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 24px;
-        }
-
-        .transactions-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .transactions-header h2 {
-            font-size: 16px;
-            color: var(--text-secondary);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .filter-select {
-            padding: 8px 12px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 13px;
-            outline: none;
-        }
-
-        .filter-select:hover {
-            border-color: var(--accent);
-        }
-
-        .transaction-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 14px 16px;
-            background: var(--bg-secondary);
-            border-radius: 10px;
-            margin-bottom: 10px;
-            border-left: 3px solid transparent;
-            transition: opacity 0.2s;
-        }
-
-        .transaction-item.income-item {
-            border-left-color: var(--income);
-        }
-
-        .transaction-item.expense-item {
-            border-left-color: var(--expense);
-        }
-
-        .t-left {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .t-icon {
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 16px;
-        }
-
-        .income-icon {
-            background: #14532d;
-        }
-
-        .expense-icon {
-            background: #450a0a;
-        }
-
-        .t-desc {
-            font-size: 14px;
-            font-weight: 500;
-        }
-
-        .t-meta {
-            font-size: 12px;
-            color: var(--text-secondary);
-            margin-top: 2px;
-        }
-
-        .t-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .t-amount {
-            font-size: 15px;
-            font-weight: 700;
-        }
-
-        .t-amount.income-amt {
-            color: var(--income);
-        }
-
-        .t-amount.expense-amt {
-            color: var(--expense);
-        }
-
-        .delete-btn {
-            background: none;
-            border: none;
-            color: var(--text-secondary);
-            cursor: pointer;
-            font-size: 16px;
-            padding: 4px 8px;
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .delete-btn:hover {
-            color: var(--expense);
-            background: #450a0a33;
-        }
-
-        .edit-btn:hover {
-            color: var(--accent);
-            background: color-mix(in srgb, var(--accent) 18%, transparent);
-        }
-
-        .empty-state {
-            text-align: center;
-            color: var(--text-secondary);
-            padding: 40px 0;
-            font-size: 14px;
-        }
-
-        .hidden {
-            display: none !important;
-        }
-
-        .auth-overlay {
-            position: fixed;
-            inset: 0;
-            background: color-mix(in srgb, var(--bg-primary) 88%, black);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-            z-index: 999;
-        }
-
-        .auth-card {
-            width: min(420px, 100%);
-            background: var(--bg-card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 24px;
-        }
-
-        .auth-card h2 {
-            color: var(--text-primary);
-            margin-bottom: 8px;
-            font-size: 22px;
-        }
-
-        .auth-subtitle {
-            color: var(--text-secondary);
-            font-size: 14px;
-            margin-bottom: 18px;
-        }
-
-        .auth-group {
-            margin-bottom: 12px;
-        }
-
-        .auth-group label {
-            display: block;
-            font-size: 13px;
-            color: var(--text-secondary);
-            margin-bottom: 6px;
-        }
-
-        .auth-group input {
-            width: 100%;
-            padding: 10px 12px;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text-primary);
-            font-size: 14px;
-            outline: none;
-        }
-
-        .auth-group input:focus {
-            border-color: var(--accent);
-        }
-
-        .auth-actions {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-            margin-top: 8px;
-        }
-
-        .auth-btn {
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        .auth-btn.primary {
-            background: var(--accent);
-            border-color: var(--accent);
-            color: #fff;
-        }
-
-        .auth-btn.secondary {
-            background: var(--bg-secondary);
-            color: var(--text-primary);
-        }
-
-        .auth-btn:hover {
-            filter: brightness(1.08);
-            border-color: var(--accent);
-        }
-
-        #auth-message {
-            margin-top: 12px;
-            color: var(--text-secondary);
-            font-size: 13px;
-            min-height: 18px;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .summary-cards {
-                grid-template-columns: 1fr;
-            }
-
-            .main-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .chart-card {
-                display: flex;
-                flex-direction: column;
-            }
-
-            #monthlyChart,
-            #expenseDonutChart {
-                max-height: 260px;
-            }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Finance Tracker" />
+  <title>Personal Finance Tracker</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --bg-primary: #0f0f0f; --bg-secondary: #1a1a1a; --bg-card: #222222;
+      --accent: #6366f1; --accent-hover: #818cf8; --income: #22c55e;
+      --expense: #ef4444; --text-primary: #ffffff; --text-secondary: #a0a0a0;
+      --border: #333333; --chart-grid: #333333; --chart-label: #a0a0a0;
+    }
+    body[data-theme='light'] {
+      --bg-primary: #f6f7fb; --bg-secondary: #ffffff; --bg-card: #ffffff;
+      --accent: #4f46e5; --accent-hover: #4338ca; --income: #15803d;
+      --expense: #dc2626; --text-primary: #0f172a; --text-secondary: #475569;
+      --border: #dbe2ea; --chart-grid: #e2e8f0; --chart-label: #475569;
+    }
+    body { font-family: 'Segoe UI', sans-serif; background: var(--bg-primary); color: var(--text-primary); min-height: 100vh; }
+    body, header, .budget-card, .card, .form-card, .chart-card, .transactions-card,
+    .transaction-item, .action-btn, .type-btn, .submit-btn, .delete-btn,
+    .form-group input, .form-group select, .filter-select, .search-input,
+    .budget-input-wrap input, .t-meta, .empty-state, .budget-status {
+      transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+    header { background: var(--bg-secondary); border-bottom: 1px solid var(--border); padding: 16px 32px; display: flex; align-items: center; justify-content: space-between; }
+    header h1 { font-size: 22px; font-weight: 700; color: var(--accent); }
+    .header-right { display: flex; align-items: center; gap: 10px; }
+    header span { color: var(--text-secondary); font-size: 14px; }
+    .action-btn { padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 13px; cursor: pointer; transition: all 0.2s; }
+    .action-btn:hover { border-color: var(--accent); color: var(--accent); }
+    .container { max-width: 1100px; margin: 0 auto; padding: 32px 20px; }
+    .budget-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 18px 20px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+    .budget-input-wrap { display: flex; align-items: center; gap: 10px; }
+    .budget-input-wrap label { font-size: 14px; color: var(--text-secondary); }
+    .budget-input-wrap input { width: 180px; padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; outline: none; }
+    .budget-input-wrap input:focus { border-color: var(--accent); }
+    .budget-status { font-size: 14px; color: var(--text-secondary); font-weight: 500; }
+    .budget-status.warning { color: #facc15; }
+    .budget-status.exceeded { color: var(--expense); }
+    .summary-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-bottom: 32px; }
+    .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .card .label { font-size: 13px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+    .card .amount { font-size: 28px; font-weight: 700; }
+    .card.balance .amount { color: var(--accent); }
+    .card.income .amount { color: var(--income); }
+    .card.expense .amount { color: var(--expense); }
+    .main-grid { display: grid; grid-template-columns: 1fr 1.4fr; gap: 24px; margin-bottom: 32px; }
+    .form-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .form-card h2 { font-size: 16px; margin-bottom: 20px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+    .form-group input, .form-group select { width: 100%; padding: 10px 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; outline: none; transition: border-color 0.2s; }
+    .form-group input:focus, .form-group select:focus { border-color: var(--accent); }
+    .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 14px; }
+    .type-btn { padding: 10px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-secondary); color: var(--text-secondary); font-size: 14px; cursor: pointer; transition: all 0.2s; }
+    .type-btn.active-income { background: #14532d; border-color: var(--income); color: var(--income); }
+    .type-btn.active-expense { background: #450a0a; border-color: var(--expense); color: var(--expense); }
+    .submit-btn { width: 100%; padding: 12px; background: var(--accent); color: #fff; border: none; border-radius: 8px; font-size: 15px; font-weight: 600; cursor: pointer; transition: background 0.2s; margin-top: 6px; }
+    .submit-btn:hover { background: var(--accent-hover); }
+    .chart-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .chart-card h2 { font-size: 16px; margin-bottom: 20px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+    .chart-card .secondary-chart-title { margin-top: 28px; }
+    .chart-card canvas { display: block; width: 100% !important; }
+    .search-input { width: 100%; padding: 10px 12px; margin-bottom: 14px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; outline: none; }
+    .search-input:focus { border-color: var(--accent); }
+    .transactions-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; padding: 24px; }
+    .transactions-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+    .transactions-header h2 { font-size: 16px; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; }
+    .filter-select { padding: 8px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 13px; outline: none; }
+    .filter-select:hover { border-color: var(--accent); }
+    .transaction-item { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; background: var(--bg-secondary); border-radius: 10px; margin-bottom: 10px; border-left: 3px solid transparent; }
+    .transaction-item.income-item { border-left-color: var(--income); }
+    .transaction-item.expense-item { border-left-color: var(--expense); }
+    .t-left { display: flex; align-items: center; gap: 12px; }
+    .t-icon { width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+    .income-icon { background: #14532d; }
+    .expense-icon { background: #450a0a; }
+    .t-desc { font-size: 14px; font-weight: 500; }
+    .t-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .t-right { display: flex; align-items: center; gap: 16px; }
+    .t-amount { font-size: 15px; font-weight: 700; }
+    .t-amount.income-amt { color: var(--income); }
+    .t-amount.expense-amt { color: var(--expense); }
+    .delete-btn { background: none; border: none; color: var(--text-secondary); cursor: pointer; font-size: 16px; padding: 4px 8px; border-radius: 6px; transition: all 0.2s; }
+    .delete-btn:hover { color: var(--expense); background: #450a0a33; }
+    .edit-btn:hover { color: var(--accent); background: rgba(99,102,241,0.15); }
+    .empty-state { text-align: center; color: var(--text-secondary); padding: 40px 0; font-size: 14px; }
+    .hidden { display: none !important; }
+    .auth-overlay { position: fixed; inset: 0; background: rgba(15,15,15,0.92); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 999; }
+    .auth-card { width: min(420px, 100%); background: var(--bg-card); border: 1px solid var(--border); border-radius: 14px; padding: 24px; }
+    .auth-card h2 { color: var(--text-primary); margin-bottom: 8px; font-size: 22px; }
+    .auth-subtitle { color: var(--text-secondary); font-size: 14px; margin-bottom: 18px; }
+    .auth-group { margin-bottom: 12px; }
+    .auth-group label { display: block; font-size: 13px; color: var(--text-secondary); margin-bottom: 6px; }
+    .auth-group input { width: 100%; padding: 10px 12px; background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--text-primary); font-size: 14px; outline: none; }
+    .auth-group input:focus { border-color: var(--accent); }
+    .auth-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .auth-btn { border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; font-size: 14px; font-weight: 600; cursor: pointer; }
+    .auth-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+    .auth-btn.secondary { background: var(--bg-secondary); color: var(--text-primary); }
+    .auth-btn:hover { filter: brightness(1.08); border-color: var(--accent); }
+    #auth-message { margin-top: 12px; color: var(--text-secondary); font-size: 13px; min-height: 18px; }
+    @media (max-width: 768px) {
+      .summary-cards { grid-template-columns: 1fr; }
+      .main-grid { grid-template-columns: 1fr; }
+    }
+  </style>
 </head>
-
 <body>
-    <div id="auth-overlay" class="auth-overlay">
-        <div class="auth-card">
-            <h2>Welcome Back</h2>
-            <div class="auth-subtitle">Login or create an account to use Finance Tracker.</div>
-            <div class="auth-group">
-                <label for="auth-email">Email</label>
-                <input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email" />
-            </div>
-            <div class="auth-group">
-                <label for="auth-password">Password</label>
-                <input id="auth-password" type="password" placeholder="Enter password"
-                    autocomplete="current-password" />
-            </div>
-            <div class="auth-actions">
-                <button class="auth-btn primary" onclick="handleSignIn()">Login</button>
-                <button class="auth-btn secondary" onclick="handleSignUp()">Sign Up</button>
-            </div>
-            <div id="auth-message"></div>
-        </div>
+
+<div id="auth-overlay" class="auth-overlay">
+  <div class="auth-card">
+    <h2>💰 Finance Tracker</h2>
+    <div class="auth-subtitle">Login or create an account to continue.</div>
+    <div class="auth-group">
+      <label for="auth-email">Email</label>
+      <input id="auth-email" type="email" placeholder="you@example.com" autocomplete="email" />
+    </div>
+    <div class="auth-group">
+      <label for="auth-password">Password</label>
+      <input id="auth-password" type="password" placeholder="Enter password" autocomplete="current-password" />
+    </div>
+    <div class="auth-actions">
+      <button class="auth-btn primary" id="signin-btn">Login</button>
+      <button class="auth-btn secondary" id="signup-btn">Sign Up</button>
+    </div>
+    <div id="auth-message"></div>
+  </div>
+</div>
+
+<div id="app-root" class="hidden">
+  <header>
+    <h1>💰 Finance Tracker</h1>
+    <div class="header-right">
+      <span id="current-date"></span>
+      <button id="theme-toggle-btn" class="action-btn">Light Mode</button>
+      <button id="logout-btn" class="action-btn hidden">Logout</button>
+    </div>
+  </header>
+
+  <div class="container">
+    <div class="budget-card">
+      <div class="budget-input-wrap">
+        <label for="monthly-budget">Monthly Budget (₹)</label>
+        <input type="number" id="monthly-budget" min="0" placeholder="Enter monthly budget" />
+      </div>
+      <div id="budget-status" class="budget-status">Set a monthly budget to track spending.</div>
     </div>
 
-    <div id="app-root" class="hidden">
-        <header>
-            <h1>💰 Finance Tracker</h1>
-            <div class="header-right">
-                <span id="current-date"></span>
-                <button id="theme-toggle-btn" class="action-btn" onclick="toggleTheme()">Toggle Theme</button>
-                <button id="logout-btn" class="action-btn hidden" onclick="handleLogout()">Logout</button>
-            </div>
-        </header>
-
-        <div class="container">
-            <div class="budget-card">
-                <div class="budget-input-wrap">
-                    <label for="monthly-budget">Monthly Budget (₹)</label>
-                    <input type="number" id="monthly-budget" min="0" placeholder="Enter monthly budget" />
-                </div>
-                <div id="budget-status" class="budget-status">Set a monthly budget to track spending.</div>
-            </div>
-
-            <!-- SUMMARY CARDS -->
-            <div class="summary-cards">
-                <div class="card balance">
-                    <div class="label"><span class="label-icon">💼</span> Total Balance</div>
-                    <div class="amount" id="total-balance">₹0</div>
-                </div>
-                <div class="card income">
-                    <div class="label"><span class="label-icon">📈</span> Total Income</div>
-                    <div class="amount" id="total-income">₹0</div>
-                </div>
-                <div class="card expense">
-                    <div class="label"><span class="label-icon">📉</span> Total Expenses</div>
-                    <div class="amount" id="total-expense">₹0</div>
-                </div>
-            </div>
-
-            <!-- FORM + CHART -->
-            <div class="main-grid">
-
-                <!-- ADD TRANSACTION FORM -->
-                <div class="form-card">
-                    <h2>Add Transaction</h2>
-
-                    <div class="type-toggle">
-                        <button class="type-btn active-income" id="btn-income" onclick="setType('income')">＋
-                            Income</button>
-                        <button class="type-btn" id="btn-expense" onclick="setType('expense')">− Expense</button>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Description</label>
-                        <input type="text" id="desc" placeholder="e.g. Salary, Groceries..." />
-                    </div>
-                    <div class="form-group">
-                        <label>Amount (₹)</label>
-                        <input type="number" id="amount" placeholder="0" min="0" />
-                    </div>
-                    <div class="form-group">
-                        <label>Category</label>
-                        <select id="category">
-                            <option value="Food">🍔 Food</option>
-                            <option value="Transport">🚗 Transport</option>
-                            <option value="Shopping">🛍️ Shopping</option>
-                            <option value="Bills">💡 Bills</option>
-                            <option value="Entertainment">🎮 Entertainment</option>
-                            <option value="Salary">💼 Salary</option>
-                            <option value="Freelance">💻 Freelance</option>
-                            <option value="Other">📦 Other</option>
-                        </select>
-                    </div>
-                    <div class="form-group">
-                        <label>Date</label>
-                        <input type="date" id="date" />
-                    </div>
-
-                    <button id="submit-transaction-btn" class="submit-btn" onclick="addTransaction()">Add
-                        Transaction</button>
-                </div>
-
-                <!-- CHART -->
-                <div class="chart-card">
-                    <h2>Monthly Overview</h2>
-                    <canvas id="monthlyChart"></canvas>
-                    <h2 class="secondary-chart-title">Expense Breakdown by Category</h2>
-                    <canvas id="expenseDonutChart"></canvas>
-                </div>
-
-            </div>
-
-            <!-- TRANSACTIONS LIST -->
-            <div class="transactions-card">
-                <div class="transactions-header">
-                    <h2>All Transactions</h2>
-                    <div class="header-right">
-                        <button class="action-btn" onclick="exportTransactionsCSV()">Export CSV</button>
-                        <select id="category-filter" class="filter-select" onchange="setCategoryFilter(this.value)">
-                            <option value="all">All Categories</option>
-                            <option value="Food">Food</option>
-                            <option value="Transport">Transport</option>
-                            <option value="Shopping">Shopping</option>
-                            <option value="Bills">Bills</option>
-                            <option value="Entertainment">Entertainment</option>
-                            <option value="Salary">Salary</option>
-                            <option value="Freelance">Freelance</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
-                </div>
-                <input type="text" id="transaction-search" class="search-input" placeholder="Search by description..."
-                    oninput="filterTransactions(this.value)" autocomplete="off" />
-                <div id="transaction-list"></div>
-            </div>
-
-        </div>
+    <div class="summary-cards">
+      <div class="card balance">
+        <div class="label">💼 Total Balance</div>
+        <div class="amount" id="total-balance">₹0</div>
+      </div>
+      <div class="card income">
+        <div class="label">📈 Total Income</div>
+        <div class="amount" id="total-income">₹0</div>
+      </div>
+      <div class="card expense">
+        <div class="label">📉 Total Expenses</div>
+        <div class="amount" id="total-expense">₹0</div>
+      </div>
     </div>
 
-    <script>
-        const APP_CONFIG = {
-            supabaseUrl: '',
-            supabaseAnonKey: ''
-        };
-        // 1. Define your actual values here (Safe to keep URL public, Key should be in Vercel)
-        const config = {
-            supabaseUrl: 'https://atnvrzgqfniqmhlgnxqh.supabase.co',
-            supabaseAnonKey: 'sb_publishable_qp_T-NhSAXIYB8Qyiiu0hw_Tz0eB_J2'
-        };
+    <div class="main-grid">
+      <div class="form-card">
+        <h2>Add Transaction</h2>
+        <div class="type-toggle">
+          <button class="type-btn active-income" id="btn-income">＋ Income</button>
+          <button class="type-btn" id="btn-expense">− Expense</button>
+        </div>
+        <div class="form-group">
+          <label>Description</label>
+          <input type="text" id="desc" placeholder="e.g. Salary, Groceries..." />
+        </div>
+        <div class="form-group">
+          <label>Amount (₹)</label>
+          <input type="number" id="amount" placeholder="0" min="0" />
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="category">
+            <option value="Food">🍔 Food</option>
+            <option value="Transport">🚗 Transport</option>
+            <option value="Shopping">🛍️ Shopping</option>
+            <option value="Bills">💡 Bills</option>
+            <option value="Entertainment">🎮 Entertainment</option>
+            <option value="Salary">💼 Salary</option>
+            <option value="Freelance">💻 Freelance</option>
+            <option value="Other">📦 Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="date" />
+        </div>
+        <button id="submit-transaction-btn" class="submit-btn">Add Transaction</button>
+      </div>
 
-        // 2. The Logic: Try to get from Vercel/Process first, then fallback to your config
-        const SUPABASE_URL = config.supabaseUrl;
-        const SUPABASE_ANON_KEY = config.supabaseAnonKey;
+      <div class="chart-card">
+        <h2>Monthly Overview</h2>
+        <canvas id="monthlyChart"></canvas>
+        <h2 class="secondary-chart-title">Expense Breakdown</h2>
+        <canvas id="expenseDonutChart"></canvas>
+      </div>
+    </div>
 
-        // 3. Initialize
-        const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        if (!window.supabaseClient) {
-            window.supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-        }
-        const db = window.supabaseClient;
-        if ('serviceWorker' in navigator) {
-            window.addEventListener('load', () => {
-                navigator.serviceWorker.register('./sw.js').catch(() => { });
-            });
-        }
+    <div class="transactions-card">
+      <div class="transactions-header">
+        <h2>All Transactions</h2>
+        <div class="header-right">
+          <button class="action-btn" id="export-csv-btn">Export CSV</button>
+          <select id="category-filter" class="filter-select">
+            <option value="all">All Categories</option>
+            <option value="Food">Food</option>
+            <option value="Transport">Transport</option>
+            <option value="Shopping">Shopping</option>
+            <option value="Bills">Bills</option>
+            <option value="Entertainment">Entertainment</option>
+            <option value="Salary">Salary</option>
+            <option value="Freelance">Freelance</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+      </div>
+      <input type="text" id="transaction-search" class="search-input" placeholder="Search by description..." autocomplete="off" />
+      <div id="transaction-list"></div>
+    </div>
+  </div>
+</div>
 
-        // ── STATE ──────────────────────────────────────────────
-        let transactions = JSON.parse(localStorage.getItem('ft_transactions')) || [];
-        let selectedType = 'income';
-        let editingTransactionId = null;
-        let monthlyChart = null;
-        let expenseDonutChart = null;
-        let currentCategoryFilter = 'all';
-        let currentUser = null;
-        const themeStorageKey = 'ft_theme';
-        const budgetStorageKey = 'ft_monthly_budget';
+<script>
+  // ── SUPABASE INIT (clean, no conflicts) ────────────────
+  const SUPABASE_URL = 'https://atnvrzgqfniqmhlgnxqh.supabase.co';
+  const SUPABASE_ANON_KEY = 'sb_publishable_qp_T-NhSAXIYB8Qyiiu0hw_Tz0eB_J2';
+  const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-        const categoryIcons = {
-            Food: '🍔', Transport: '🚗', Shopping: '🛍️',
-            Bills: '💡', Entertainment: '🎮', Salary: '💼',
-            Freelance: '💻', Other: '📦'
-        };
+  // ── STATE ──────────────────────────────────────────────
+  let transactions = [];
+  let selectedType = 'income';
+  let editingTransactionId = null;
+  let monthlyChart = null;
+  let expenseDonutChart = null;
+  let currentCategoryFilter = 'all';
+  let currentSearch = '';
+  let currentUser = null;
+  const themeStorageKey = 'ft_theme';
+  const budgetStorageKey = 'ft_monthly_budget';
+  const categoryIcons = { Food:'🍔', Transport:'🚗', Shopping:'🛍️', Bills:'💡', Entertainment:'🎮', Salary:'💼', Freelance:'💻', Other:'📦' };
 
-        // ── INIT ───────────────────────────────────────────────
-        document.getElementById('current-date').textContent =
-            new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-        document.getElementById('date').valueAsDate = new Date();
-        const budgetInput = document.getElementById('monthly-budget');
-        budgetInput.value = localStorage.getItem(budgetStorageKey) || '';
-        budgetInput.addEventListener('input', handleBudgetInput);
-        applyTheme(localStorage.getItem(themeStorageKey) || 'dark');
+  // ── WIRE UP ALL BUTTONS (no onclick in HTML) ───────────
+  document.getElementById('signin-btn').addEventListener('click', handleSignIn);
+  document.getElementById('signup-btn').addEventListener('click', handleSignUp);
+  document.getElementById('logout-btn').addEventListener('click', handleLogout);
+  document.getElementById('theme-toggle-btn').addEventListener('click', toggleTheme);
+  document.getElementById('submit-transaction-btn').addEventListener('click', addTransaction);
+  document.getElementById('export-csv-btn').addEventListener('click', exportTransactionsCSV);
+  document.getElementById('btn-income').addEventListener('click', () => setType('income'));
+  document.getElementById('btn-expense').addEventListener('click', () => setType('expense'));
+  document.getElementById('category-filter').addEventListener('change', (e) => { currentCategoryFilter = e.target.value; renderTransactions(); });
+  document.getElementById('transaction-search').addEventListener('input', (e) => { currentSearch = e.target.value.trim().toLowerCase(); renderTransactions(); });
 
-        // ── AUTH ───────────────────────────────────────────────
-        function setAuthMessage(message, isError = false) {
-            const msgEl = document.getElementById('auth-message');
-            msgEl.textContent = message || '';
-            msgEl.style.color = isError ? 'var(--expense)' : 'var(--text-secondary)';
-        }
+  // ── INIT ───────────────────────────────────────────────
+  document.getElementById('current-date').textContent = new Date().toLocaleDateString('en-IN', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  document.getElementById('date').valueAsDate = new Date();
+  const budgetInput = document.getElementById('monthly-budget');
+  budgetInput.value = localStorage.getItem(budgetStorageKey) || '';
+  budgetInput.addEventListener('input', handleBudgetInput);
+  applyTheme(localStorage.getItem(themeStorageKey) || 'dark');
+  initAuth();
 
-        function setAuthenticatedUI(user) {
-            currentUser = user || null;
-            const overlay = document.getElementById('auth-overlay');
-            const appRoot = document.getElementById('app-root');
-            const logoutBtn = document.getElementById('logout-btn');
-            if (currentUser) {
-                overlay.classList.add('hidden');
-                appRoot.classList.remove('hidden');
-                logoutBtn.classList.remove('hidden');
-                setAuthMessage('');
-                updateAll();
-                return;
-            }
-            overlay.classList.remove('hidden');
-            appRoot.classList.add('hidden');
-            logoutBtn.classList.add('hidden');
-        }
+  // ── AUTH ───────────────────────────────────────────────
+  function setAuthMessage(msg, isError = false) {
+    const el = document.getElementById('auth-message');
+    el.textContent = msg || '';
+    el.style.color = isError ? 'var(--expense)' : 'var(--text-secondary)';
+  }
 
-        async function initAuth() {
-            const { data, error } = await db.auth.getSession();
-            if (error) {
-                setAuthMessage(error.message, true);
-                setAuthenticatedUI(null);
-                return;
-            }
-            setAuthenticatedUI(data.session?.user || null);
-            db.auth.onAuthStateChange((event, session) => {
-                setAuthenticatedUI(session?.user || null);
-            });
-        }
+  function setAuthenticatedUI(user) {
+    currentUser = user || null;
+    const overlay = document.getElementById('auth-overlay');
+    const appRoot = document.getElementById('app-root');
+    const logoutBtn = document.getElementById('logout-btn');
+    if (currentUser) {
+      overlay.classList.add('hidden');
+      appRoot.classList.remove('hidden');
+      logoutBtn.classList.remove('hidden');
+      setAuthMessage('');
+      updateAll();
+    } else {
+      overlay.classList.remove('hidden');
+      appRoot.classList.add('hidden');
+      logoutBtn.classList.add('hidden');
+    }
+  }
 
-        window.handleSignUp = async function () {
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-            if (!email || !password) {
-                setAuthMessage('Please enter both email and password.', true);
-                return;
-            }
-            const { error } = await db.auth.signUp({ email, password });
-            if (error) {
-                setAuthMessage(error.message, true);
-                return;
-            }
-            setAuthMessage('Sign-up successful. Check your email if confirmation is enabled.');
-        }
+  async function initAuth() {
+    const { data, error } = await db.auth.getSession();
+    if (error) { setAuthMessage(error.message, true); setAuthenticatedUI(null); return; }
+    setAuthenticatedUI(data.session?.user || null);
+    db.auth.onAuthStateChange((event, session) => {
+      setAuthenticatedUI(session?.user || null);
+    });
+  }
 
-        window.handleSignIn = async function () {
-            const email = document.getElementById('auth-email').value.trim();
-            const password = document.getElementById('auth-password').value;
-            if (!email || !password) {
-                setAuthMessage('Please enter both email and password.', true);
-                return;
-            }
-            const { error } = await db.auth.signInWithPassword({ email, password });
-            if (error) {
-                setAuthMessage(error.message, true);
-                return;
-            }
-            setAuthMessage('');
-        }
+  async function handleSignIn() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) { setAuthMessage('Please enter email and password.', true); return; }
+    setAuthMessage('Signing in...');
+    const { error } = await db.auth.signInWithPassword({ email, password });
+    if (error) { setAuthMessage(error.message, true); return; }
+    setAuthMessage('');
+  }
 
-        window.handleLogout = async function () {
-            const { error } = await db.auth.signOut();
-            if (error) {
-                alert(error.message);
-            }
-            transactions = [];
-        }
+  async function handleSignUp() {
+    const email = document.getElementById('auth-email').value.trim();
+    const password = document.getElementById('auth-password').value;
+    if (!email || !password) { setAuthMessage('Please enter email and password.', true); return; }
+    setAuthMessage('Creating account...');
+    const { error } = await db.auth.signUp({ email, password });
+    if (error) { setAuthMessage(error.message, true); return; }
+    setAuthMessage('Account created! Check your email to confirm, then login.');
+  }
 
-        // ── TYPE TOGGLE ────────────────────────────────────────
-        function setType(type) {
-            selectedType = type;
-            document.getElementById('btn-income').className =
-                'type-btn' + (type === 'income' ? ' active-income' : '');
-            document.getElementById('btn-expense').className =
-                'type-btn' + (type === 'expense' ? ' active-expense' : '');
-        }
+  async function handleLogout() {
+    await db.auth.signOut();
+    transactions = [];
+  }
 
-        // ── ADD TRANSACTION ────────────────────────────────────
-        async function addTransaction() {
-            const desc = document.getElementById('desc').value.trim();
-            const amount = parseFloat(document.getElementById('amount').value);
-            const category = document.getElementById('category').value;
-            const date = document.getElementById('date').value;
-            if (!desc) return alert('Please enter a description.');
-            if (!amount || amount <= 0) return alert('Please enter a valid amount.');
-            if (!date) return alert('Please select a date.');
+  // ── THEME ──────────────────────────────────────────────
+  function applyTheme(theme) {
+    const t = theme === 'light' ? 'light' : 'dark';
+    document.body.setAttribute('data-theme', t);
+    localStorage.setItem(themeStorageKey, t);
+    const btn = document.getElementById('theme-toggle-btn');
+    if (btn) btn.textContent = t === 'light' ? 'Dark Mode' : 'Light Mode';
+  }
 
-            try {
-                const { data: { user }, error: userError } = await db.auth.getUser();
-                if (userError) throw userError;
-                if (!user?.id) {
-                    alert('Please log in to add transactions.');
-                    return;
-                }
+  function toggleTheme() {
+    applyTheme(document.body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    renderChart();
+  }
 
-                if (editingTransactionId !== null) {
-                    const { error } = await save({
-                        id: editingTransactionId,
-                        desc,
-                        amount,
-                        category,
-                        date,
-                        type: selectedType
-                    });
-                    if (error) throw error;
-                    await updateAll();
-                    clearForm();
-                    resetFormMode();
-                    return;
-                }
+  // ── TYPE TOGGLE ────────────────────────────────────────
+  function setType(type) {
+    selectedType = type;
+    document.getElementById('btn-income').className = 'type-btn' + (type === 'income' ? ' active-income' : '');
+    document.getElementById('btn-expense').className = 'type-btn' + (type === 'expense' ? ' active-expense' : '');
+  }
 
-                const { error } = await db
-                    .from('transactions')
-                    .insert([{
-                        user_id: user.id,
-                        description: desc,
-                        amount,
-                        category,
-                        type: selectedType,
-                        date
-                    }]);
-                if (error) throw error;
+  // ── ADD / EDIT TRANSACTION ─────────────────────────────
+  async function addTransaction() {
+    const desc = document.getElementById('desc').value.trim();
+    const amount = parseFloat(document.getElementById('amount').value);
+    const category = document.getElementById('category').value;
+    const date = document.getElementById('date').value;
+    if (!desc) return alert('Please enter a description.');
+    if (!amount || amount <= 0) return alert('Please enter a valid amount.');
+    if (!date) return alert('Please select a date.');
+    try {
+      const { data: { user }, error: userError } = await db.auth.getUser();
+      if (userError) throw userError;
+      if (!user?.id) { alert('Please log in first.'); return; }
+      if (editingTransactionId !== null) {
+        const { error } = await db.from('transactions').update({ description: desc, amount, category, type: selectedType, date }).eq('id', editingTransactionId).eq('user_id', user.id);
+        if (error) throw error;
+      } else {
+        const { error } = await db.from('transactions').insert([{ user_id: user.id, description: desc, amount, category, type: selectedType, date }]);
+        if (error) throw error;
+      }
+      await updateAll();
+      clearForm();
+      resetFormMode();
+    } catch (err) {
+      alert(err?.message || 'Failed to save transaction.');
+    }
+  }
 
-                await updateAll();
-                clearForm();
-                resetFormMode();
-            } catch (error) {
-                const message = error?.message || 'Unable to save transaction. This may be blocked by RLS policy.';
-                alert(message);
-            }
-        }
+  // ── DELETE ─────────────────────────────────────────────
+  async function deleteTransaction(id) {
+    if (!currentUser?.id) return;
+    const { error } = await db.from('transactions').delete().eq('id', id);
+    if (error) { alert(error.message); return; }
+    await updateAll();
+  }
 
-        // ── DELETE ─────────────────────────────────────────────
-        async function deleteTransaction(id) {
-            if (!currentUser?.id) return;
-            const { error } = await db
-                .from('transactions')
-                .delete()
-                .eq('id', id);
-            if (error) {
-                alert(error.message);
-                return;
-            }
-            await updateAll();
-        }
+  // ── EDIT ───────────────────────────────────────────────
+  function editTransaction(id) {
+    const tx = transactions.find(t => t.id === id);
+    if (!tx) { alert('Transaction not found.'); return; }
+    editingTransactionId = id;
+    document.getElementById('desc').value = tx.desc;
+    document.getElementById('amount').value = tx.amount;
+    document.getElementById('category').value = tx.category;
+    document.getElementById('date').value = tx.date;
+    setType(tx.type);
+    document.getElementById('submit-transaction-btn').textContent = 'Update Transaction';
+    document.querySelector('.form-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
 
-        // ── THEME ───────────────────────────────────────────────
-        function applyTheme(theme) {
-            const safeTheme = theme === 'light' ? 'light' : 'dark';
-            document.body.setAttribute('data-theme', safeTheme);
-            localStorage.setItem(themeStorageKey, safeTheme);
-            const toggleBtn = document.getElementById('theme-toggle-btn');
-            if (toggleBtn) toggleBtn.textContent = safeTheme === 'light' ? 'Dark Mode' : 'Light Mode';
-        }
+  function resetFormMode() {
+    editingTransactionId = null;
+    setType('income');
+    document.getElementById('submit-transaction-btn').textContent = 'Add Transaction';
+  }
 
-        function toggleTheme() {
-            const currentTheme = document.body.getAttribute('data-theme') || 'dark';
-            applyTheme(currentTheme === 'dark' ? 'light' : 'dark');
-            renderChart();
-        }
+  function clearForm() {
+    document.getElementById('desc').value = '';
+    document.getElementById('amount').value = '';
+    document.getElementById('category').value = 'Food';
+    document.getElementById('date').valueAsDate = new Date();
+  }
 
-        // ── EXPORT CSV ──────────────────────────────────────────
-        function csvCell(value) {
-            const safe = String(value ?? '').replace(/"/g, '""');
-            return `"${safe}"`;
-        }
+  // ── BUDGET ─────────────────────────────────────────────
+  function handleBudgetInput(e) {
+    const value = Number(e.target.value);
+    if (!e.target.value || value <= 0) { localStorage.removeItem(budgetStorageKey); }
+    else { localStorage.setItem(budgetStorageKey, String(value)); }
+    updateBudgetStatus();
+  }
 
-        function exportTransactionsCSV() {
-            if (!transactions.length) {
-                alert('No transactions available to export.');
-                return;
-            }
+  function updateBudgetStatus() {
+    const status = document.getElementById('budget-status');
+    const savedBudget = Number(localStorage.getItem(budgetStorageKey));
+    status.className = 'budget-status';
+    if (!savedBudget || savedBudget <= 0) { status.textContent = 'Set a monthly budget to track spending.'; return; }
+    const now = new Date();
+    const currentExpense = transactions.filter(t => {
+      if (t.type !== 'expense') return false;
+      const d = new Date(t.date + 'T00:00:00');
+      return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+    }).reduce((s, t) => s + Number(t.amount), 0);
+    const pct = (currentExpense / savedBudget) * 100;
+    const text = `${fmt(currentExpense)} of ${fmt(savedBudget)} used (${pct.toFixed(1)}%)`;
+    if (pct >= 100) { status.classList.add('exceeded'); status.textContent = '🚨 Limit Exceeded: ' + text; }
+    else if (pct >= 80) { status.classList.add('warning'); status.textContent = '⚠️ Warning: ' + text; }
+    else { status.textContent = '✅ On track: ' + text; }
+  }
 
-            const header = ['Date', 'Description', 'Category', 'Type', 'Amount'];
-            const rows = transactions.map(t => [
-                formatDate(t.date),
-                t.desc,
-                t.category,
-                t.type,
-                Number(t.amount).toFixed(2)
-            ]);
-            const csvContent = [header, ...rows]
-                .map(row => row.map(csvCell).join(','))
-                .join('\n');
+  // ── SUMMARY ────────────────────────────────────────────
+  function updateSummary() {
+    const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
+    const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
+    document.getElementById('total-balance').textContent = fmt(income - expense);
+    document.getElementById('total-income').textContent = fmt(income);
+    document.getElementById('total-expense').textContent = fmt(expense);
+  }
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            const dateSuffix = new Date().toISOString().slice(0, 10);
-            link.href = url;
-            link.download = `transactions-${dateSuffix}.csv`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
-        }
-
-        // ── SAVE ───────────────────────────────────────────────
-        async function save(transaction) {
-            if (!currentUser?.id || !transaction?.id) {
-                return { error: new Error('Missing user or transaction id.') };
-            }
-            const { error } = await db
-                .from('transactions')
-                .update({
-                    description: transaction.desc,
-                    amount: transaction.amount,
-                    category: transaction.category,
-                    type: transaction.type,
-                    date: transaction.date
-                })
-                .eq('id', transaction.id)
-                .eq('user_id', currentUser.id);
-            return { error };
-        }
-
-        function handleBudgetInput(event) {
-            const value = Number(event.target.value);
-            if (!event.target.value || value <= 0) {
-                localStorage.removeItem(budgetStorageKey);
-                updateBudgetStatus();
-                return;
-            }
-            localStorage.setItem(budgetStorageKey, String(value));
-            updateBudgetStatus();
-        }
-
-        // ── CLEAR FORM ─────────────────────────────────────────
-        function clearForm() {
-            document.getElementById('desc').value = '';
-            document.getElementById('amount').value = '';
-            document.getElementById('category').value = 'Food';
-            document.getElementById('date').valueAsDate = new Date();
-        }
-
-        function resetFormMode() {
-            editingTransactionId = null;
-            setType('income');
-            const submitBtn = document.getElementById('submit-transaction-btn');
-            if (submitBtn) submitBtn.textContent = 'Add Transaction';
-        }
-
-        function editTransaction(id) {
-            const tx = transactions.find(t => t.id === id);
-            if (!tx) {
-                alert('Transaction not found.');
-                return;
-            }
-            editingTransactionId = id;
-            document.getElementById('desc').value = tx.desc;
-            document.getElementById('amount').value = tx.amount;
-            document.getElementById('category').value = tx.category;
-            document.getElementById('date').value = tx.date;
-            setType(tx.type);
-            const submitBtn = document.getElementById('submit-transaction-btn');
-            if (submitBtn) submitBtn.textContent = 'Update Transaction';
-            const formCard = document.querySelector('.form-card');
-            if (formCard) formCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        // ── UPDATE ALL ─────────────────────────────────────────
-        async function updateAll() {
-            await renderTransactions();
-            updateSummary();
-            renderChart();
-            updateBudgetStatus();
-        }
-
-        function getCurrentMonthExpenseTotal() {
-            const now = new Date();
-            const month = now.getMonth();
-            const year = now.getFullYear();
-            return transactions
-                .filter(t => {
-                    if (t.type !== 'expense') return false;
-                    const d = new Date(t.date + 'T00:00:00');
-                    return d.getMonth() === month && d.getFullYear() === year;
-                })
-                .reduce((sum, t) => sum + Number(t.amount), 0);
-        }
-
-        function updateBudgetStatus() {
-            const status = document.getElementById('budget-status');
-            const savedBudget = Number(localStorage.getItem(budgetStorageKey));
-            status.className = 'budget-status';
-
-            if (!savedBudget || savedBudget <= 0) {
-                status.textContent = 'Set a monthly budget to track spending.';
-                return;
-            }
-
-            const currentExpense = getCurrentMonthExpenseTotal();
-            const usedPercent = (currentExpense / savedBudget) * 100;
-            const usageText = `${fmt(currentExpense)} of ${fmt(savedBudget)} used this month (${usedPercent.toFixed(1)}%)`;
-
-            if (usedPercent >= 100) {
-                status.classList.add('exceeded');
-                status.textContent = `Limit Exceeded: ${usageText}`;
-                return;
-            }
-
-            if (usedPercent >= 80) {
-                status.classList.add('warning');
-                status.textContent = `Warning: ${usageText}`;
-                return;
-            }
-
-            status.textContent = `On track: ${usageText}`;
-        }
-
-        // ── SUMMARY ────────────────────────────────────────────
-        function updateSummary() {
-            const income = transactions.filter(t => t.type === 'income').reduce((s, t) => s + t.amount, 0);
-            const expense = transactions.filter(t => t.type === 'expense').reduce((s, t) => s + t.amount, 0);
-            const balance = income - expense;
-
-            document.getElementById('total-balance').textContent = fmt(balance);
-            document.getElementById('total-income').textContent = fmt(income);
-            document.getElementById('total-expense').textContent = fmt(expense);
-        }
-
-        // ── SEARCH TRANSACTIONS ────────────────────────────────
-        let currentSearch = '';
-
-        async function filterTransactions(query) {
-            currentSearch = query.trim().toLowerCase();
-            await renderTransactions();
-        }
-
-        async function setCategoryFilter(filter) {
-            currentCategoryFilter = filter;
-            await renderTransactions();
-        }
-
-        // ── RENDER TRANSACTIONS ────────────────────────────────
-        async function renderTransactions() {
-            const list = document.getElementById('transaction-list');
-            if (!currentUser?.id) {
-                transactions = [];
-                list.innerHTML = '<div class="empty-state">Please log in to view transactions.</div>';
-                return;
-            }
-
-            const { data, error } = await db
-                .from('transactions')
-                .select('*')
-                .eq('user_id', currentUser.id)
-                .order('date', { ascending: false })
-                .order('created_at', { ascending: false });
-            if (error) {
-                list.innerHTML = `<div class="empty-state">${error.message}</div>`;
-                return;
-            }
-            transactions = (data || []).map(row => ({
-                id: row.id,
-                desc: row.description,
-                amount: Number(row.amount),
-                category: row.category,
-                type: row.type,
-                date: row.date
-            }));
-
-            let filtered = currentCategoryFilter === 'all'
-                ? transactions
-                : transactions.filter(t => t.category === currentCategoryFilter);
-            if (currentSearch) {
-                filtered = filtered.filter(t =>
-                    t.desc && t.desc.toLowerCase().includes(currentSearch)
-                );
-            }
-
-            if (filtered.length === 0) {
-                list.innerHTML = '<div class="empty-state">No transactions yet. Add one above! 👆</div>';
-                return;
-            }
-
-            list.innerHTML = filtered.map(t => `
+  // ── RENDER TRANSACTIONS ────────────────────────────────
+  async function renderTransactions() {
+    const list = document.getElementById('transaction-list');
+    if (!currentUser?.id) { transactions = []; list.innerHTML = '<div class="empty-state">Please log in to view transactions.</div>'; return; }
+    const { data, error } = await db.from('transactions').select('*').eq('user_id', currentUser.id).order('date', { ascending: false });
+    if (error) { list.innerHTML = `<div class="empty-state">${error.message}</div>`; return; }
+    transactions = (data || []).map(r => ({ id: r.id, desc: r.description, amount: Number(r.amount), category: r.category, type: r.type, date: r.date }));
+    let filtered = currentCategoryFilter === 'all' ? transactions : transactions.filter(t => t.category === currentCategoryFilter);
+    if (currentSearch) filtered = filtered.filter(t => t.desc && t.desc.toLowerCase().includes(currentSearch));
+    if (filtered.length === 0) { list.innerHTML = '<div class="empty-state">No transactions yet. Add one above! 👆</div>'; return; }
+    list.innerHTML = filtered.map(t => `
       <div class="transaction-item ${t.type}-item">
         <div class="t-left">
           <div class="t-icon ${t.type}-icon">${categoryIcons[t.category] || '📦'}</div>
-          <div>
-            <div class="t-desc">${t.desc}</div>
-            <div class="t-meta">${t.category} · ${formatDate(t.date)}</div>
-          </div>
+          <div><div class="t-desc">${t.desc}</div><div class="t-meta">${t.category} · ${formatDate(t.date)}</div></div>
         </div>
         <div class="t-right">
-          <div class="t-amount ${t.type}-amt">
-            ${t.type === 'income' ? '+' : '-'}${fmt(t.amount)}
-          </div>
+          <div class="t-amount ${t.type}-amt">${t.type === 'income' ? '+' : '-'}${fmt(t.amount)}</div>
           <button class="delete-btn edit-btn" onclick="editTransaction('${t.id}')" title="Edit">✏️</button>
           <button class="delete-btn" onclick="deleteTransaction('${t.id}')" title="Delete">🗑️</button>
         </div>
-      </div>
-    `).join('');
-        }
+      </div>`).join('');
+  }
 
-        // ── CHART ──────────────────────────────────────────────
-        function renderChart() {
-            const months = getLast6Months();
-            const incomeData = months.map(m => sumByMonth(m, 'income'));
-            const expenseData = months.map(m => sumByMonth(m, 'expense'));
-            const styles = getComputedStyle(document.body);
-            const chartLabel = styles.getPropertyValue('--chart-label').trim() || '#a0a0a0';
-            const chartGrid = styles.getPropertyValue('--chart-grid').trim() || '#333';
-            const donutPalette = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#06b6d4', '#3b82f6', '#8b5cf6', '#ec4899'];
+  // ── EXPORT CSV ─────────────────────────────────────────
+  function exportTransactionsCSV() {
+    if (!transactions.length) { alert('No transactions to export.'); return; }
+    const rows = [['Date','Description','Category','Type','Amount'], ...transactions.map(t => [formatDate(t.date), t.desc, t.category, t.type, Number(t.amount).toFixed(2)])];
+    const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
+    a.download = `transactions-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click();
+  }
 
-            const ctx = document.getElementById('monthlyChart').getContext('2d');
-            if (monthlyChart) monthlyChart.destroy();
+  // ── CHART ──────────────────────────────────────────────
+  function renderChart() {
+    const months = getLast6Months();
+    const styles = getComputedStyle(document.body);
+    const chartLabel = styles.getPropertyValue('--chart-label').trim() || '#a0a0a0';
+    const chartGrid = styles.getPropertyValue('--chart-grid').trim() || '#333';
+    const palette = ['#ef4444','#f97316','#eab308','#22c55e','#06b6d4','#3b82f6','#8b5cf6','#ec4899'];
+    const ctx = document.getElementById('monthlyChart').getContext('2d');
+    if (monthlyChart) monthlyChart.destroy();
+    monthlyChart = new Chart(ctx, { type: 'bar', data: { labels: months.map(m => { const [y,mo] = m.split('-'); return new Date(y, mo-1).toLocaleString('default', {month:'short',year:'2-digit'}); }), datasets: [{ label:'Income', data: months.map(m=>sumByMonth(m,'income')), backgroundColor:'#22c55e88', borderColor:'#22c55e', borderWidth:2, borderRadius:6 },{ label:'Expense', data: months.map(m=>sumByMonth(m,'expense')), backgroundColor:'#ef444488', borderColor:'#ef4444', borderWidth:2, borderRadius:6 }] }, options: { responsive:true, plugins:{ legend:{ labels:{ color:chartLabel } } }, scales:{ x:{ ticks:{color:chartLabel}, grid:{color:chartGrid} }, y:{ ticks:{color:chartLabel}, grid:{color:chartGrid} } } } });
+    const expMap = transactions.filter(t=>t.type==='expense').reduce((a,t)=>{ a[t.category]=(a[t.category]||0)+Number(t.amount); return a; },{});
+    const dLabels = Object.keys(expMap), dData = dLabels.map(l=>expMap[l]);
+    const dCtx = document.getElementById('expenseDonutChart').getContext('2d');
+    if (expenseDonutChart) expenseDonutChart.destroy();
+    expenseDonutChart = new Chart(dCtx, { type:'doughnut', data:{ labels: dLabels.length?dLabels:['No Data'], datasets:[{ data: dData.length?dData:[1], backgroundColor: dData.length?dLabels.map((_,i)=>palette[i%palette.length]+'cc'):[chartGrid], borderColor: dData.length?dLabels.map((_,i)=>palette[i%palette.length]):[chartGrid], borderWidth:1.5 }] }, options:{ responsive:true, cutout:'62%', plugins:{ legend:{position:'right',labels:{color:chartLabel}}, tooltip:{ callbacks:{ label(ctx){ if(!dData.length) return 'No expenses yet'; const total=dData.reduce((s,v)=>s+v,0); return `${ctx.label}: ${fmt(ctx.parsed)} (${((ctx.parsed/total)*100).toFixed(1)}%)`; } } } } } });
+  }
 
-            monthlyChart = new Chart(ctx, {
-                type: 'bar',
-                data: {
-                    labels: months.map(m => {
-                        const [y, mo] = m.split('-');
-                        return new Date(y, mo - 1).toLocaleString('default', { month: 'short', year: '2-digit' });
-                    }),
-                    datasets: [
-                        { label: 'Income', data: incomeData, backgroundColor: '#22c55e88', borderColor: '#22c55e', borderWidth: 2, borderRadius: 6 },
-                        { label: 'Expense', data: expenseData, backgroundColor: '#ef444488', borderColor: '#ef4444', borderWidth: 2, borderRadius: 6 }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { labels: { color: chartLabel } } },
-                    scales: {
-                        x: { ticks: { color: chartLabel }, grid: { color: chartGrid } },
-                        y: { ticks: { color: chartLabel }, grid: { color: chartGrid } }
-                    }
-                }
-            });
+  // ── UPDATE ALL ─────────────────────────────────────────
+  async function updateAll() {
+    await renderTransactions();
+    updateSummary();
+    renderChart();
+    updateBudgetStatus();
+  }
 
-            const expenseTotalsByCategory = transactions
-                .filter(t => t.type === 'expense')
-                .reduce((acc, t) => {
-                    acc[t.category] = (acc[t.category] || 0) + Number(t.amount);
-                    return acc;
-                }, {});
-            const donutLabels = Object.keys(expenseTotalsByCategory);
-            const donutData = donutLabels.map(label => expenseTotalsByCategory[label]);
-            const donutCtx = document.getElementById('expenseDonutChart').getContext('2d');
-            if (expenseDonutChart) expenseDonutChart.destroy();
-
-            expenseDonutChart = new Chart(donutCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: donutLabels.length ? donutLabels : ['No Expense Data'],
-                    datasets: [{
-                        data: donutData.length ? donutData : [1],
-                        backgroundColor: donutData.length
-                            ? donutLabels.map((_, index) => donutPalette[index % donutPalette.length] + 'cc')
-                            : [chartGrid],
-                        borderColor: donutData.length
-                            ? donutLabels.map((_, index) => donutPalette[index % donutPalette.length])
-                            : [chartGrid],
-                        borderWidth: 1.5
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    cutout: '62%',
-                    plugins: {
-                        legend: {
-                            position: 'right',
-                            labels: { color: chartLabel }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: function (context) {
-                                    if (!donutData.length) return 'No expense transactions yet';
-                                    const value = context.parsed || 0;
-                                    const total = donutData.reduce((sum, v) => sum + v, 0);
-                                    const percent = total ? ((value / total) * 100).toFixed(1) : '0.0';
-                                    return `${context.label}: ${fmt(value)} (${percent}%)`;
-                                }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        // ── HELPERS ────────────────────────────────────────────
-        function fmt(n) {
-            return '₹' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2 });
-        }
-
-        function formatDate(d) {
-            return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' });
-        }
-
-        function getLast6Months() {
-            const months = [];
-            const now = new Date();
-            for (let i = 5; i >= 0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                months.push(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`);
-            }
-            return months;
-        }
-
-        function sumByMonth(monthStr, type) {
-            return transactions
-                .filter(t => t.type === type && t.date.startsWith(monthStr))
-                .reduce((s, t) => s + t.amount, 0);
-        }
-
-        // ── START ──────────────────────────────────────────────
-        // initAuth handles everything — it checks session and calls updateAll when user is confirmed
-        initAuth();
-    </script>
+  // ── HELPERS ────────────────────────────────────────────
+  function fmt(n) { return '₹' + Math.abs(n).toLocaleString('en-IN', { minimumFractionDigits: 2 }); }
+  function formatDate(d) { return new Date(d + 'T00:00:00').toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' }); }
+  function getLast6Months() { const m=[],now=new Date(); for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1); m.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`); } return m; }
+  function sumByMonth(ms, type) { return transactions.filter(t=>t.type===type&&t.date.startsWith(ms)).reduce((s,t)=>s+t.amount,0); }
+</script>
 </body>
-
 </html>
