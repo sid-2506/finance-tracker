@@ -11,7 +11,17 @@
   <title>Personal Finance Tracker</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
-  <script src="./env.js"></script>
+  <!-- <script src="./env.js"></script> -->
+  <script>
+  // 1. Paste your ACTUAL Project URL here (Found in Settings > API)
+  const supabaseUrl = 'https://atnvrzgqfniqmhlgnxqh.supabase.co'; 
+  
+  // 2. Paste your ACTUAL 'anon public' key here
+  const supabaseKey = 'sb_publishable_qp_T-NhSAXIYB8Qyiiu0hw_Tz0eB_J2';
+  
+  // 3. Initialize the client
+const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+  </script>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
